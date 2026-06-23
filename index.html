@@ -405,30 +405,114 @@
     border-radius: 4px;
   }
 
-  /* ── Pseudocode ── */
+  /* ── Pseudocode strip (attached below chart) ── */
+  #chart {
+    border-radius: 16px 16px 0 0 !important;
+    border-bottom-color: transparent !important;
+  }
+
+  .progress-wrap {
+    margin-top: 0 !important;
+    border-radius: 0;
+    background: #1a2744;
+    height: 2px;
+  }
+
+  .progress-bar { border-radius: 0; }
+
+  #pseudocode-wrap {
+    background: #090f1e;
+    border: 1px solid #1a2744;
+    border-top: none;
+    border-radius: 0 0 16px 16px;
+    padding: 0;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+
+  #pseudocode-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px 6px;
+    border-bottom: 1px solid #111c33;
+  }
+
+  #pseudocode-header span {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: #2d3e5a;
+    font-weight: 700;
+  }
+
+  #pseudocode-state-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #1e3a8a;
+    transition: background 0.15s, box-shadow 0.15s;
+    margin-left: auto;
+  }
+
   #pseudocode {
     font-family: 'JetBrains Mono', 'Courier New', monospace;
-    font-size: 0.71rem;
-    line-height: 1.95;
+    font-size: 0.72rem;
+    line-height: 1;
     white-space: pre;
     overflow-x: auto;
-    color: #334155;
+    color: #2d3e5a;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    padding: 8px 0 10px;
   }
 
   .code-line {
-    display: block;
-    padding: 1px 8px;
-    border-radius: 4px;
-    transition: background 0.15s, color 0.15s;
+    display: contents;
+  }
+
+  .code-line-num {
+    padding: 3px 10px 3px 14px;
+    color: #1e2d45;
+    font-size: 0.65rem;
+    user-select: none;
+    text-align: right;
+    transition: color 0.15s;
     border-left: 2px solid transparent;
   }
 
-  .code-line.active {
-    background: rgba(59,130,246,0.1);
-    color: #93c5fd;
-    font-weight: 600;
-    border-left-color: #3b82f6;
+  .code-line-text {
+    padding: 3px 14px 3px 8px;
+    border-radius: 0 4px 4px 0;
+    transition: background 0.15s, color 0.15s;
+    white-space: pre;
   }
+
+  /* Active line states — color-matched to bar states */
+  .code-line.active .code-line-num  {
+    color: var(--active-color, #93c5fd);
+    border-left-color: var(--active-color, #3b82f6);
+  }
+  .code-line.active .code-line-text {
+    background: var(--active-bg, rgba(59,130,246,0.08));
+    color: var(--active-color, #93c5fd);
+    font-weight: 600;
+  }
+
+  /* State variants */
+  #pseudocode.state-pivot  { --active-color: #fbbf24; --active-bg: rgba(245,158,11,0.1); }
+  #pseudocode.state-compare{ --active-color: #c084fc; --active-bg: rgba(168,85,247,0.1); }
+  #pseudocode.state-swap   { --active-color: #f87171; --active-bg: rgba(239,68,68,0.1);  }
+  #pseudocode.state-sorted { --active-color: #4ade80; --active-bg: rgba(34,197,94,0.1);  }
+  #pseudocode.state-default{ --active-color: #93c5fd; --active-bg: rgba(59,130,246,0.08);}
+
+  /* State dot colors */
+  #pseudocode.state-pivot   ~ * #pseudocode-state-dot,
+  #pseudocode-wrap.state-pivot   #pseudocode-state-dot { background: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,0.8); }
+  #pseudocode-wrap.state-compare #pseudocode-state-dot { background: #a855f7; box-shadow: 0 0 6px rgba(168,85,247,0.8); }
+  #pseudocode-wrap.state-swap    #pseudocode-state-dot { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.8); }
+  #pseudocode-wrap.state-sorted  #pseudocode-state-dot { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.8); }
+  #pseudocode-wrap.state-default #pseudocode-state-dot { background: #3b82f6; box-shadow: 0 0 6px rgba(59,130,246,0.6); }
 
   /* ── Pivot row ── */
   .pivot-row { display: none; align-items: center; gap: 8px; font-size: 0.81rem; color: #4b5a7a; }
@@ -510,6 +594,14 @@
     <div id="chart"></div>
     <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
 
+    <div id="pseudocode-wrap">
+      <div id="pseudocode-header">
+        <span>Pseudocode</span>
+        <div id="pseudocode-state-dot"></div>
+      </div>
+      <div id="pseudocode"></div>
+    </div>
+
     <div class="controls">
       <button id="btnNew">&#10010; New Array</button>
       <button id="btnBack">&#8592; Back</button>
@@ -589,10 +681,6 @@
       <div id="complexityBox"></div>
     </div>
 
-    <div class="panel">
-      <h3>Pseudocode</h3>
-      <div id="pseudocode"></div>
-    </div>
   </div>
 </div>
 
@@ -1121,11 +1209,14 @@ function buildComplexity(algo) {
 function buildPseudocode(algo) {
   const lines = ALGO_INFO[algo].pseudocode;
   pseudocodeEl.innerHTML = lines.map((l, idx) =>
-    `<span class="code-line" data-line="${idx+1}">${l.length ? l : ' '}</span>`
-  ).join('\n');
+    `<span class="code-line" data-line="${idx+1}"><span class="code-line-num">${idx+1}</span><span class="code-line-text">${l.length ? l : ' '}</span></span>`
+  ).join('');
 }
 
-function highlightLine(lineNum) {
+function highlightLine(lineNum, state) {
+  const wrap = document.getElementById('pseudocode-wrap');
+  pseudocodeEl.className = `state-${state || 'default'}`;
+  wrap.className = `state-${state || 'default'}`;
   document.querySelectorAll('.code-line').forEach(el => {
     el.classList.toggle('active', parseInt(el.dataset.line) === lineNum);
   });
@@ -1169,7 +1260,13 @@ function renderStep(step) {
   statSwaps.textContent = step.swaps;
   statArrayAccess.textContent = step.accesses;
   statDepth.textContent = step.depth;
-  highlightLine(step.line);
+  // Derive current operation state for pseudocode coloring
+  let codeState = 'default';
+  if (step.line === -1 && currentStep === steps.length - 1) codeState = 'sorted';
+  else if (step.swap1 >= 0 || step.swap2 >= 0) codeState = 'swap';
+  else if (step.compare >= 0) codeState = 'compare';
+  else if (step.pivot >= 0) codeState = 'pivot';
+  highlightLine(step.line, codeState);
   playStepSound(step);
 
   // Progress bar
