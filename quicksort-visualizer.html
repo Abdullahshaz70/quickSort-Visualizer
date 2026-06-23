@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sorting Algorithm Visualizer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px; }
+  h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; color: #f8fafc; }
+  .subtitle { font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px; }
+
+  .algo-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; }
+  .algo-tab { padding: 8px 16px; border-radius: 20px; background: #1e293b; color: #94a3b8; font-size: 0.82rem; font-weight: 600; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; }
+  .algo-tab:hover { background: #273548; }
+  .algo-tab.active { background: #1e3a5f; color: #60a5fa; border-color: #3b82f6; }
+
+  .main-layout { display: flex; gap: 16px; width: 100%; max-width: 1150px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+  .viz-col { flex: 1; min-width: 320px; max-width: 900px; }
+  .side-col { width: 270px; display: flex; flex-direction: column; gap: 12px; }
+
+  .legend { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.76rem; color: #94a3b8; }
+  .legend-dot { width: 13px; height: 13px; border-radius: 3px; flex-shrink: 0; }
+
+  #chart { display: flex; align-items: flex-end; gap: 3px; height: 300px; width: 100%; background: #1e293b; border-radius: 12px; padding: 16px 16px 0 16px; position: relative; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 3px; }
+  .bar { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.12s ease, background 0.12s ease; }
+  .bar-label { font-size: 9px; color: #94a3b8; margin-bottom: 3px; line-height: 1; text-align: center; min-height: 10px; }
+  .bar.default  { background: #3b82f6; }
+  .bar.pivot    { background: #f59e0b; }
+  .bar.compare  { background: #a855f7; }
+  .bar.swap     { background: #ef4444; }
+  .bar.sorted   { background: #22c55e; }
+  .bar.subarray { background: #38bdf8; }
+  .bar.merging  { background: #ec4899; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; align-items: center; justify-content: center; }
+  button { padding: 10px 22px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.1s; }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  #btnPlay    { background: #3b82f6; color: #fff; }
+  #btnStep    { background: #6366f1; color: #fff; }
+  #btnBack    { background: #6366f1; color: #fff; }
+  #btnReset   { background: #475569; color: #fff; }
+  #btnNew     { background: #0f766e; color: #fff; }
+  #btnSound   { background: #334155; color: #e2e8f0; font-size: 1rem; padding: 10px 14px; }
+  #btnSound.on { background: #7c3aed; color: #fff; }
+
+  .slider-group { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8; }
+  input[type=range] { accent-color: #3b82f6; width: 100px; }
+  select { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; font-size: 0.82rem; }
+
+  #status { margin-top: 14px; font-size: 0.9rem; color: #94a3b8; min-height: 22px; text-align: center; }
+  #stepCount { font-size: 0.78rem; color: #64748b; margin-top: 4px; text-align: center; }
+  .timer { font-size: 0.78rem; color: #64748b; text-align: center; margin-top: 2px; }
+  .kbd-hint { font-size: 0.72rem; color: #475569; text-align: center; margin-top: 6px; }
+  .kbd { background: #1e293b; border: 1px solid #334155; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 0.72rem; }
+
+  .panel { background: #1e293b; border-radius: 12px; padding: 14px 16px; }
+  .panel h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 10px; font-weight: 700; }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-box { background: #0f172a; border-radius: 8px; padding: 10px; text-align: center; }
+  .stat-val { font-size: 1.4rem; font-weight: 700; color: #f8fafc; }
+  .stat-label { font-size: 0.68rem; color: #64748b; margin-top: 2px; }
+
+  .complexity-row { display: flex; justify-content: space-between; font-size: 0.78rem; padding: 5px 0; border-bottom: 1px solid #273548; color: #cbd5e1; }
+  .complexity-row:last-child { border-bottom: none; }
+  .complexity-row span:first-child { color: #94a3b8; }
+  .complexity-row code { color: #fbbf24; font-family: 'Consolas', monospace; }
+
+  #pseudocode { font-family: 'Consolas', 'Courier New', monospace; font-size: 0.76rem; line-height: 1.85; white-space: pre; overflow-x: auto; color: #94a3b8; }
+  .code-line { display: block; padding: 1px 8px; border-radius: 4px; transition: background 0.15s; }
+  .code-line.active { background: #1e3a5f; color: #93c5fd; font-weight: 600; }
+
+  /* pivot strategy row */
+  .pivot-row { display: none; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8; }
+  .pivot-row.visible { display: flex; }
+  .pivot-row select { background: #1e293b; color: #60a5fa; border-color: #3b82f6; font-weight: 600; }
+
+  /* custom input */
+  .custom-input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+  #customInput { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; padding: 7px 10px; font-size: 0.82rem; width: 220px; }
+  #customInput::placeholder { color: #475569; }
+  #btnCustom { background: #92400e; color: #fef3c7; padding: 8px 16px; font-size: 0.82rem; }
+
+  /* pivot badge */
+  .pivot-badge { display: none; background: #7c2d12; color: #fcd34d; border-radius: 6px; padding: 4px 12px; font-size: 0.76rem; font-weight: 700; text-align: center; margin-top: 6px; }
+  .pivot-badge.show { display: block; }
+</style>
+</head>
+<body>
+
+<h1>Sorting Algorithm Visualizer</h1>
+<p class="subtitle">Step through classic sorting algorithms — compare complexity, swaps, and comparisons</p>
+
+<div class="algo-tabs" id="algoTabs">
+  <div class="algo-tab active" data-algo="quick">QuickSort</div>
+  <div class="algo-tab" data-algo="merge">MergeSort</div>
+  <div class="algo-tab" data-algo="bubble">BubbleSort</div>
+  <div class="algo-tab" data-algo="heap">HeapSort</div>
+  <div class="algo-tab" data-algo="insertion">InsertionSort</div>
+  <div class="algo-tab" data-algo="selection">SelectionSort</div>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<div class="main-layout">
+  <div class="viz-col">
+    <div id="chart"></div>
+
+    <div class="controls">
+      <button id="btnNew">New Array</button>
+      <button id="btnBack">← Back</button>
+      <button id="btnStep">Step →</button>
+      <button id="btnPlay">▶ Play</button>
+      <button id="btnReset">Reset</button>
+      <button id="btnSound" title="Toggle sound">🔇</button>
+    </div>
+
+    <div class="controls" style="margin-top:10px;">
+      <div class="slider-group">
+        Speed:
+        <input type="range" id="speedSlider" min="50" max="1000" value="400">
+        <span id="speedLabel">Fast</span>
+      </div>
+      <div class="slider-group">
+        Size:
+        <input type="range" id="sizeSlider" min="5" max="80" value="30">
+        <span id="sizeLabel">30</span>
+      </div>
+      <div class="slider-group">
+        Data:
+        <select id="presetSelect">
+          <option value="random">Random</option>
+          <option value="sorted">Sorted</option>
+          <option value="reverse">Reverse sorted</option>
+          <option value="nearly">Nearly sorted</option>
+          <option value="duplicates">Many duplicates</option>
+          <option value="fewunique">Few unique values</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Pivot strategy row (QuickSort only) -->
+    <div class="controls" style="margin-top:6px;">
+      <div class="pivot-row visible" id="pivotRow">
+        Pivot:
+        <select id="pivotSelect">
+          <option value="last">Last element (Lomuto)</option>
+          <option value="first">First element</option>
+          <option value="random">Random element</option>
+          <option value="median3">Median of three</option>
+        </select>
+      </div>
+      <div id="pivotBadge" class="pivot-badge"></div>
+    </div>
+
+    <!-- Custom array input -->
+    <div class="custom-input-row">
+      <input type="text" id="customInput" placeholder="Custom array e.g. 42, 7, 19, 3, 55">
+      <button id="btnCustom">Use →</button>
+    </div>
+
+    <div id="status">Press Play or Step to start sorting.</div>
+    <div id="stepCount"></div>
+    <div class="timer" id="timer"></div>
+    <div class="kbd-hint">
+      <span class="kbd">Space</span> Play/Pause &nbsp;
+      <span class="kbd">←</span> Step back &nbsp;
+      <span class="kbd">→</span> Step forward &nbsp;
+      <span class="kbd">R</span> Reset &nbsp;
+      <span class="kbd">N</span> New array
+    </div>
+  </div>
+
+  <div class="side-col">
+    <div class="panel">
+      <h3>Live stats</h3>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val" id="statCompares">0</div><div class="stat-label">Comparisons</div></div>
+        <div class="stat-box"><div class="stat-val" id="statSwaps">0</div><div class="stat-label">Swaps / Writes</div></div>
+        <div class="stat-box"><div class="stat-val" id="statArrayAccess">0</div><div class="stat-label">Array accesses</div></div>
+        <div class="stat-box"><div class="stat-val" id="statDepth">0</div><div class="stat-label">Recursion depth</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Time complexity</h3>
+      <div id="complexityBox"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Pseudocode</h3>
+      <div id="pseudocode"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============== ALGORITHM METADATA ==============
+const ALGO_INFO = {
+  quick: {
+    name: 'QuickSort',
+    complexity: { best: 'O(n log n)', avg: 'O(n log n)', worst: 'O(n²)', space: 'O(log n)' },
+    pseudocode: [
+      'function quickSort(arr, lo, hi):',
+      '  if lo >= hi: return',
+      '  p = partition(arr, lo, hi)',
+      '  quickSort(arr, lo, p - 1)',
+      '  quickSort(arr, p + 1, hi)',
+      '',
+      'function partition(arr, lo, hi):',
+      '  pivot = arr[hi]   // Lomuto',
+      '  i = lo - 1',
+      '  for j = lo to hi - 1:',
+      '    if arr[j] <= pivot:',
+      '      i++',
+      '      swap(arr[i], arr[j])',
+      '  swap(arr[i+1], arr[hi])',
+      '  return i + 1'
+    ],
+    legend: [
+      ['pivot', '#f59e0b', 'Pivot'],
+      ['compare', '#a855f7', 'Comparing'],
+      ['swap', '#ef4444', 'Swapping'],
+      ['subarray', '#38bdf8', 'Current subarray'],
+      ['sorted', '#22c55e', 'Sorted']
+    ]
+  },
+  merge: {
+    name: 'MergeSort',
+    complexity: { best: 'O(n log n)', avg: 'O(n log n)', worst: 'O(n log n)', space: 'O(n)' },
+    pseudocode: [
+      'function mergeSort(arr, lo, hi):',
+      '  if lo >= hi: return',
+      '  mid = (lo + hi) / 2',
+      '  mergeSort(arr, lo, mid)',
+      '  mergeSort(arr, mid+1, hi)',
+      '  merge(arr, lo, mid, hi)',
+      '',
+      'function merge(arr, lo, mid, hi):',
+      '  left = arr[lo..mid]',
+      '  right = arr[mid+1..hi]',
+      '  i = j = 0, k = lo',
+      '  while i < left.len and j < right.len:',
+      '    if left[i] <= right[j]:',
+      '      arr[k++] = left[i++]',
+      '    else: arr[k++] = right[j++]',
+      '  copy remaining elements'
+    ],
+    legend: [
+      ['subarray', '#38bdf8', 'Active range'],
+      ['compare', '#a855f7', 'Comparing'],
+      ['merging', '#ec4899', 'Merging'],
+      ['sorted', '#22c55e', 'Sorted']
+    ]
+  },
+  bubble: {
+    name: 'BubbleSort',
+    complexity: { best: 'O(n)', avg: 'O(n²)', worst: 'O(n²)', space: 'O(1)' },
+    pseudocode: [
+      'function bubbleSort(arr):',
+      '  n = arr.length',
+      '  for i = 0 to n - 1:',
+      '    swapped = false',
+      '    for j = 0 to n - i - 2:',
+      '      if arr[j] > arr[j+1]:',
+      '        swap(arr[j], arr[j+1])',
+      '        swapped = true',
+      '    if not swapped: break'
+    ],
+    legend: [
+      ['compare', '#a855f7', 'Comparing'],
+      ['swap', '#ef4444', 'Swapping'],
+      ['sorted', '#22c55e', 'Sorted (settled)']
+    ]
+  },
+  heap: {
+    name: 'HeapSort',
+    complexity: { best: 'O(n log n)', avg: 'O(n log n)', worst: 'O(n log n)', space: 'O(1)' },
+    pseudocode: [
+      'function heapSort(arr):',
+      '  n = arr.length',
+      '  for i = n/2 - 1 downto 0:',
+      '    heapify(arr, n, i)',
+      '  for i = n - 1 downto 1:',
+      '    swap(arr[0], arr[i])',
+      '    heapify(arr, i, 0)',
+      '',
+      'function heapify(arr, n, i):',
+      '  largest = i, l = 2i+1, r = 2i+2',
+      '  if l<n and arr[l]>arr[largest]: largest=l',
+      '  if r<n and arr[r]>arr[largest]: largest=r',
+      '  if largest != i:',
+      '    swap(arr[i], arr[largest])',
+      '    heapify(arr, n, largest)'
+    ],
+    legend: [
+      ['pivot', '#f59e0b', 'Heap root / comparing'],
+      ['compare', '#a855f7', 'Comparing children'],
+      ['swap', '#ef4444', 'Swapping'],
+      ['subarray', '#38bdf8', 'Heap region'],
+      ['sorted', '#22c55e', 'Sorted']
+    ]
+  },
+  insertion: {
+    name: 'InsertionSort',
+    complexity: { best: 'O(n)', avg: 'O(n²)', worst: 'O(n²)', space: 'O(1)' },
+    pseudocode: [
+      'function insertionSort(arr):',
+      '  for i = 1 to n - 1:',
+      '    key = arr[i]',
+      '    j = i - 1',
+      '    while j >= 0 and arr[j] > key:',
+      '      arr[j+1] = arr[j]',
+      '      j--',
+      '    arr[j+1] = key'
+    ],
+    legend: [
+      ['pivot', '#f59e0b', 'Key (current element)'],
+      ['compare', '#a855f7', 'Comparing'],
+      ['swap', '#ef4444', 'Shifting'],
+      ['sorted', '#22c55e', 'Sorted region']
+    ]
+  },
+  selection: {
+    name: 'SelectionSort',
+    complexity: { best: 'O(n²)', avg: 'O(n²)', worst: 'O(n²)', space: 'O(1)' },
+    pseudocode: [
+      'function selectionSort(arr):',
+      '  for i = 0 to n - 2:',
+      '    minIdx = i',
+      '    for j = i + 1 to n - 1:',
+      '      if arr[j] < arr[minIdx]:',
+      '        minIdx = j',
+      '    swap(arr[i], arr[minIdx])'
+    ],
+    legend: [
+      ['pivot', '#f59e0b', 'Current min'],
+      ['compare', '#a855f7', 'Comparing'],
+      ['swap', '#ef4444', 'Swapping'],
+      ['sorted', '#22c55e', 'Sorted']
+    ]
+  }
+};
+
+// ============== DOM REFS ==============
+const chart = document.getElementById('chart');
+const statusEl = document.getElementById('status');
+const stepCountEl = document.getElementById('stepCount');
+const timerEl = document.getElementById('timer');
+const btnPlay = document.getElementById('btnPlay');
+const btnStep = document.getElementById('btnStep');
+const btnBack = document.getElementById('btnBack');
+const btnReset = document.getElementById('btnReset');
+const btnNew = document.getElementById('btnNew');
+const btnSound = document.getElementById('btnSound');
+const speedSlider = document.getElementById('speedSlider');
+const speedLabel = document.getElementById('speedLabel');
+const sizeSlider = document.getElementById('sizeSlider');
+const sizeLabel = document.getElementById('sizeLabel');
+const presetSelect = document.getElementById('presetSelect');
+const pivotSelect = document.getElementById('pivotSelect');
+const pivotRow = document.getElementById('pivotRow');
+const pivotBadge = document.getElementById('pivotBadge');
+const customInput = document.getElementById('customInput');
+const btnCustom = document.getElementById('btnCustom');
+const legendEl = document.getElementById('legend');
+const pseudocodeEl = document.getElementById('pseudocode');
+const complexityBox = document.getElementById('complexityBox');
+const statCompares = document.getElementById('statCompares');
+const statSwaps = document.getElementById('statSwaps');
+const statArrayAccess = document.getElementById('statArrayAccess');
+const statDepth = document.getElementById('statDepth');
+
+let currentAlgo = 'quick';
+let array = [];
+let steps = [];
+let currentStep = 0;
+let playing = false;
+let playTimer = null;
+let startTime = null;
+let elapsedInterval = null;
+let soundEnabled = false;
+let audioCtx = null;
+
+// ============== SOUND ==============
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTone(freq, type = 'sine', duration = 0.08) {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+
+function playStepSound(step) {
+  if (!soundEnabled) return;
+  const { arr, swap1, swap2, compare, pivot } = step;
+  const max = Math.max(...arr);
+  if (swap1 !== undefined && swap1 >= 0) {
+    const freq = 150 + (arr[swap1] / max) * 700;
+    playTone(freq, 'sawtooth', 0.07);
+  } else if (compare >= 0) {
+    const freq = 200 + (arr[compare] / max) * 600;
+    playTone(freq, 'sine', 0.05);
+  } else if (pivot >= 0 && arr[pivot] !== undefined) {
+    const freq = 100 + (arr[pivot] / max) * 800;
+    playTone(freq, 'triangle', 0.1);
+  }
+}
+
+btnSound.addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  btnSound.textContent = soundEnabled ? '🔊' : '🔇';
+  btnSound.classList.toggle('on', soundEnabled);
+  if (soundEnabled) getAudioCtx(); // warm up context on user gesture
+});
+
+// ============== DATA GENERATORS ==============
+function generateArray(n, preset) {
+  switch (preset) {
+    case 'sorted':
+      return Array.from({ length: n }, (_, i) => 10 + Math.round((i / (n - 1 || 1)) * 90));
+    case 'reverse':
+      return Array.from({ length: n }, (_, i) => 100 - Math.round((i / (n - 1 || 1)) * 90));
+    case 'nearly': {
+      const arr = Array.from({ length: n }, (_, i) => 10 + Math.round((i / (n - 1 || 1)) * 90));
+      const swaps = Math.max(1, Math.floor(n * 0.1));
+      for (let s = 0; s < swaps; s++) {
+        const a = Math.floor(Math.random() * n), b = Math.floor(Math.random() * n);
+        [arr[a], arr[b]] = [arr[b], arr[a]];
+      }
+      return arr;
+    }
+    case 'duplicates':
+      return Array.from({ length: n }, () => [20, 40, 60, 80][Math.floor(Math.random() * 4)]);
+    case 'fewunique':
+      return Array.from({ length: n }, () => Math.random() < 0.5 ? 30 : 70);
+    default:
+      return Array.from({ length: n }, () => Math.floor(Math.random() * 90) + 10);
+  }
+}
+
+// ============== STEP GENERATORS ==============
+function makeCounter() { return { compares: 0, swaps: 0, accesses: 0, maxDepth: 0 }; }
+
+// --- QuickSort with pivot strategy ---
+function getPivotIndex(a, lo, hi, strategy) {
+  switch (strategy) {
+    case 'first': return lo;
+    case 'random': return lo + Math.floor(Math.random() * (hi - lo + 1));
+    case 'median3': {
+      const mid = Math.floor((lo + hi) / 2);
+      const vals = [[a[lo], lo], [a[mid], mid], [a[hi], hi]];
+      vals.sort((x, y) => x[0] - y[0]);
+      return vals[1][1]; // median index
+    }
+    default: return hi; // last (Lomuto)
+  }
+}
+
+function getPivotLabel(strategy) {
+  return { last: 'Lomuto (last element)', first: 'First element', random: 'Random element', median3: 'Median of three' }[strategy] || '';
+}
+
+function genQuickSortSteps(arr, pivotStrategy = 'last') {
+  const a = [...arr];
+  const result = [];
+  const sorted = new Set();
+  const c = makeCounter();
+
+  function snap(state, line, depth) {
+    c.maxDepth = Math.max(c.maxDepth, depth);
+    result.push({ arr: [...a], compares: c.compares, swaps: c.swaps, accesses: c.accesses, depth, line, sorted: new Set(sorted), ...state });
+  }
+
+  function partition(lo, hi, depth) {
+    // Move chosen pivot to hi first
+    const pivIdx = getPivotIndex(a, lo, hi, pivotStrategy);
+    if (pivIdx !== hi) {
+      [a[pivIdx], a[hi]] = [a[hi], a[pivIdx]];
+      snap({ pivot: hi, lo, hi, compare: -1, swap1: pivIdx, swap2: hi, msg: `Moving pivot (${a[hi]}) from index ${pivIdx} to end` }, 7, depth);
+    }
+    c.accesses++;
+    const pivotVal = a[hi];
+    snap({ pivot: hi, lo, hi, compare: -1, swap1: -1, swap2: -1, msg: `Pivot = ${pivotVal} (index ${hi}) [${getPivotLabel(pivotStrategy)}]` }, 7, depth);
+    let i = lo - 1;
+    for (let j = lo; j < hi; j++) {
+      c.compares++; c.accesses += 2;
+      snap({ pivot: hi, lo, hi, compare: j, swap1: -1, swap2: -1, msg: `Comparing arr[${j}]=${a[j]} with pivot ${pivotVal}` }, 10, depth);
+      if (a[j] <= pivotVal) {
+        i++;
+        if (i !== j) {
+          c.swaps++;
+          snap({ pivot: hi, lo, hi, compare: -1, swap1: i, swap2: j, msg: `Swapping arr[${i}]=${a[i]} and arr[${j}]=${a[j]}` }, 12, depth);
+          [a[i], a[j]] = [a[j], a[i]];
+          snap({ pivot: hi, lo, hi, compare: -1, swap1: i, swap2: j, msg: `Swapped → arr[${i}]=${a[i]}, arr[${j}]=${a[j]}` }, 12, depth);
+        }
+      }
+    }
+    const pivotPos = i + 1;
+    if (pivotPos !== hi) {
+      c.swaps++;
+      snap({ pivot: hi, lo, hi, compare: -1, swap1: pivotPos, swap2: hi, msg: `Placing pivot: swap arr[${pivotPos}] and arr[${hi}]` }, 13, depth);
+      [a[pivotPos], a[hi]] = [a[hi], a[pivotPos]];
+    }
+    sorted.add(pivotPos);
+    snap({ pivot: pivotPos, lo, hi, compare: -1, swap1: -1, swap2: -1, msg: `Pivot placed at index ${pivotPos} (value ${a[pivotPos]})` }, 14, depth);
+    return pivotPos;
+  }
+
+  function quickSort(lo, hi, depth) {
+    if (lo >= hi) { if (lo === hi) sorted.add(lo); return; }
+    const p = partition(lo, hi, depth);
+    quickSort(lo, p - 1, depth + 1);
+    quickSort(p + 1, hi, depth + 1);
+  }
+
+  quickSort(0, a.length - 1, 0);
+  const allSorted = new Set(a.map((_, i) => i));
+  result.push({ arr: [...a], pivot: -1, lo: -1, hi: -1, compare: -1, swap1: -1, swap2: -1, sorted: allSorted, msg: 'Sorting complete!', line: -1, compares: c.compares, swaps: c.swaps, accesses: c.accesses, depth: 0 });
+  return result;
+}
+
+function genBubbleSortSteps(arr) {
+  const a = [...arr], n = a.length, result = [], sorted = new Set(), c = makeCounter();
+  function snap(state, line) {
+    result.push({ arr: [...a], compares: c.compares, swaps: c.swaps, accesses: c.accesses, depth: 0, line, sorted: new Set(sorted), pivot: -1, lo: 0, hi: n - 1, ...state });
+  }
+  for (let i = 0; i < n; i++) {
+    let swapped = false;
+    snap({ compare: -1, swap1: -1, swap2: -1, msg: `Pass ${i + 1}: scanning for largest remaining element` }, 2);
+    for (let j = 0; j < n - i - 1; j++) {
+      c.compares++; c.accesses += 2;
+      snap({ compare: j, swap1: -1, swap2: -1, msg: `Comparing arr[${j}]=${a[j]} and arr[${j+1}]=${a[j+1]}` }, 5);
+      if (a[j] > a[j + 1]) {
+        c.swaps++;
+        snap({ compare: -1, swap1: j, swap2: j+1, msg: `Swapping arr[${j}] and arr[${j+1}]` }, 6);
+        [a[j], a[j+1]] = [a[j+1], a[j]];
+        swapped = true;
+        snap({ compare: -1, swap1: j, swap2: j+1, msg: `Swapped → arr[${j}]=${a[j]}, arr[${j+1}]=${a[j+1]}` }, 6);
+      }
+    }
+    sorted.add(n - i - 1);
+    if (!swapped) {
+      for (let k = 0; k <= n - i - 1; k++) sorted.add(k);
+      snap({ compare: -1, swap1: -1, swap2: -1, msg: 'No swaps this pass — array is sorted, breaking early' }, 8);
+      break;
+    }
+  }
+  const allSorted = new Set(a.map((_, i) => i));
+  result.push({ arr: [...a], pivot: -1, lo: -1, hi: -1, compare: -1, swap1: -1, swap2: -1, sorted: allSorted, msg: 'Sorting complete!', line: -1, compares: c.compares, swaps: c.swaps, accesses: c.accesses, depth: 0 });
+  return result;
+}
+
+function genInsertionSortSteps(arr) {
+  const a = [...arr], n = a.length, result = [], sorted = new Set([0]), c = makeCounter();
+  function snap(state, line) {
+    result.push({ arr: [...a], compares: c.compares, swaps: c.swaps, accesses: c.accesses, depth: 0, line, sorted: new Set(sorted), lo: 0, hi: n - 1, ...state });
+  }
+  for (let i = 1; i < n; i++) {
+    const key = a[i]; c.accesses++;
+    let j = i - 1;
+    snap({ pivot: i, compare: -1, swap1: -1, swap2: -1, msg: `Key = arr[${i}] = ${key}, inserting into sorted region` }, 3);
+    while (j >= 0 && a[j] > key) {
+      c.compares++; c.accesses++;
+      snap({ pivot: -1, compare: j, swap1: -1, swap2: -1, msg: `arr[${j}]=${a[j]} > key (${key}), shifting right` }, 5);
+      a[j + 1] = a[j]; c.swaps++; c.accesses++;
+      snap({ pivot: -1, compare: -1, swap1: j, swap2: j+1, msg: `Shifted arr[${j}] into position ${j+1}` }, 6);
+      j--;
+    }
+    if (j >= 0) { c.compares++; c.accesses++; }
+    a[j + 1] = key;
+    sorted.clear();
+    for (let k = 0; k <= i; k++) sorted.add(k);
+    snap({ pivot: j+1, compare: -1, swap1: -1, swap2: -1, msg: `Inserted key ${key} at index ${j+1}` }, 7);
+  }
+  const allSorted = new Set(a.map((_, i) => i));
+  result.push({ arr: [...a], pivot: -1, lo: -1, hi: -1, compare: -1, swap1: -1, swap2: -1, sorted: allSorted, msg: 'Sorting complete!', line: -1, compares: c.compares, swaps: c.swaps, accesses: c.accesses, depth: 0 });
+  return result;
+}
+
+function genSelectionSortSteps(arr) {
+  const a = [...arr], n = a.length, result = [], sorted = new Set(), c = makeCounter();
+  function snap(state, line) {
+    result.push({ arr: [...a], compares: c.compares, swaps: c.swaps, accesses: c.accesses, depth: 0, line, sorted: new Set(sorted), lo: 0, hi: n - 1, ...state });
+  }
+  for (let i = 0; i < n - 1; i++) {
+    let minIdx = i;
+    snap({ pivot: i, compare: -1, swap1: -1, swap2: -1, msg: `Searching for minimum from index ${i} onward` }, 2);
+    for (let j = i + 1; j < n; j++) {
+      c.compares++; c.accesses += 2;
+      snap({ pivot: minIdx, compare: j, swap1: -1, swap2: -1, msg: `Comparing arr[${j}]=${a[j]} with current min arr[${minIdx}]=${a[minIdx]}` }, 5);
+      if (a[j] < a[minIdx]) {
+        minIdx = j;
+        snap({ pivot: minIdx, compare: j, swap1: -1, swap2: -1, msg: `New minimum found at index ${j} (value ${a[j]})` }, 6);
+      }
+    }
+    if (minIdx !== i) {
+      c.swaps++;
+      snap({ pivot: -1, compare: -1, swap1: i, swap2: minIdx, msg: `Swapping arr[${i}] and arr[${minIdx}]` }, 7);
+      [a[i], a[minIdx]] = [a[minIdx], a[i]];
+    }
+    sorted.add(i);
+    snap({ pivot: -1, compare: -1, swap1: -1, swap2: -1, msg: `Index ${i} finalized with value ${a[i]}` }, 7);
+  }
+  const allSorted = new Set(a.map((_, i) => i));
+  result.push({ arr: [...a], pivot: -1, lo: -1, hi: -1, compare: -1, swap1: -1, swap2: -1, sorted: allSorted, msg: 'Sorting complete!', line: -1, compares: c.compares, swaps: c.swaps, accesses: c.accesses, depth: 0 });
+  return result;
+}
+
+function genHeapSortSteps(arr) {
+  const a = [...arr], n = a.length, result = [], sorted = new Set(), c = makeCounter();
+  function snap(state, line, depth, heapSize) {
+    c.maxDepth = Math.max(c.maxDepth, depth);
+    result.push({ arr: [...a], compares: c.compares, swaps: c.swaps, accesses: c.accesses, depth, line, sorted: new Set(sorted), lo: 0, hi: heapSize - 1, ...state });
+  }
+  function heapify(size, i, depth) {
+    let largest = i;
+    const l = 2*i+1, r = 2*i+2;
+    snap({ pivot: i, compare: -1, swap1: -1, swap2: -1, msg: `Heapify at index ${i} (heap size ${size})` }, 9, depth, size);
+    if (l < size) { c.compares++; c.accesses += 2; snap({ pivot: largest, compare: l, swap1: -1, swap2: -1, msg: `Comparing left child arr[${l}]=${a[l]} with arr[${largest}]=${a[largest]}` }, 10, depth, size); if (a[l] > a[largest]) largest = l; }
+    if (r < size) { c.compares++; c.accesses += 2; snap({ pivot: largest, compare: r, swap1: -1, swap2: -1, msg: `Comparing right child arr[${r}]=${a[r]} with arr[${largest}]=${a[largest]}` }, 11, depth, size); if (a[r] > a[largest]) largest = r; }
+    if (largest !== i) { c.swaps++; snap({ pivot: -1, compare: -1, swap1: i, swap2: largest, msg: `Swapping arr[${i}] and arr[${largest}]` }, 13, depth, size); [a[i], a[largest]] = [a[largest], a[i]]; heapify(size, largest, depth+1); }
+  }
+  for (let i = Math.floor(n/2)-1; i >= 0; i--) heapify(n, i, 0);
+  snap({ pivot: -1, compare: -1, swap1: -1, swap2: -1, msg: 'Max-heap built. Now extracting elements one by one.' }, 5, 0, n);
+  for (let i = n-1; i >= 1; i--) {
+    c.swaps++;
+    snap({ pivot: -1, compare: -1, swap1: 0, swap2: i, msg: `Moving max (root) to end: swap arr[0] and arr[${i}]` }, 6, 0, i+1);
+    [a[0], a[i]] = [a[i], a[0]]; sorted.add(i);
+    snap({ pivot: -1, compare: -1, swap1: -1, swap2: -1, msg: `Index ${i} finalized with value ${a[i]}` }, 6, 0, i);
+    heapify(i, 0, 0);
+  }
+  sorted.add(0);
+  const allSorted = new Set(a.map((_, i) => i));
+  result.push({ arr: [...a], pivot: -1, lo: -1, hi: -1, compare: -1, swap1: -1, swap2: -1, sorted: allSorted, msg: 'Sorting complete!', line: -1, compares: c.compares, swaps: c.swaps, accesses: c.accesses, depth: 0 });
+  return result;
+}
+
+function genMergeSortSteps(arr) {
+  const a = [...arr], n = a.length, result = [], sorted = new Set(), c = makeCounter();
+  function snap(state, line, depth, lo, hi) {
+    c.maxDepth = Math.max(c.maxDepth, depth);
+    result.push({ arr: [...a], compares: c.compares, swaps: c.swaps, accesses: c.accesses, depth, line, sorted: new Set(sorted), lo, hi, pivot: -1, compare: -1, swap1: -1, swap2: -1, merging1: -1, merging2: -1, ...state });
+  }
+  function merge(lo, mid, hi, depth) {
+    const left = a.slice(lo, mid+1), right = a.slice(mid+1, hi+1);
+    let i = 0, j = 0, k = lo;
+    snap({ msg: `Merging ranges [${lo}-${mid}] and [${mid+1}-${hi}]` }, 8, depth, lo, hi);
+    while (i < left.length && j < right.length) {
+      c.compares++; c.accesses += 2;
+      snap({ compare: lo+i, merging1: lo+i, merging2: mid+1+j, msg: `Comparing ${left[i]} and ${right[j]}` }, 13, depth, lo, hi);
+      if (left[i] <= right[j]) { a[k] = left[i]; i++; } else { a[k] = right[j]; j++; }
+      c.swaps++; c.accesses++;
+      snap({ merging1: k, msg: `Placed ${a[k]} at index ${k}` }, 14, depth, lo, hi);
+      k++;
+    }
+    while (i < left.length) { a[k] = left[i]; c.accesses++; c.swaps++; snap({ merging1: k, msg: `Copying remaining left: ${a[k]}` }, 16, depth, lo, hi); i++; k++; }
+    while (j < right.length) { a[k] = right[j]; c.accesses++; c.swaps++; snap({ merging1: k, msg: `Copying remaining right: ${a[k]}` }, 16, depth, lo, hi); j++; k++; }
+    for (let x = lo; x <= hi; x++) sorted.add(x);
+  }
+  function mergeSort(lo, hi, depth) {
+    if (lo >= hi) { sorted.add(lo); return; }
+    const mid = Math.floor((lo+hi)/2);
+    snap({ msg: `Splitting [${lo}-${hi}] at midpoint ${mid}` }, 3, depth, lo, hi);
+    mergeSort(lo, mid, depth+1);
+    mergeSort(mid+1, hi, depth+1);
+    sorted.clear();
+    merge(lo, mid, hi, depth);
+  }
+  mergeSort(0, n-1, 0);
+  const allSorted = new Set(a.map((_, i) => i));
+  result.push({ arr: [...a], pivot: -1, lo: -1, hi: -1, compare: -1, swap1: -1, swap2: -1, merging1: -1, merging2: -1, sorted: allSorted, msg: 'Sorting complete!', line: -1, compares: c.compares, swaps: c.swaps, accesses: c.accesses, depth: 0 });
+  return result;
+}
+
+const GENERATORS = {
+  quick: (arr) => genQuickSortSteps(arr, pivotSelect.value),
+  merge: genMergeSortSteps,
+  bubble: genBubbleSortSteps,
+  heap: genHeapSortSteps,
+  insertion: genInsertionSortSteps,
+  selection: genSelectionSortSteps
+};
+
+// ============== RENDERING ==============
+function buildLegend(algo) {
+  legendEl.innerHTML = '';
+  ALGO_INFO[algo].legend.forEach(([cls, color, label]) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-dot" style="background:${color}"></div>${label}`;
+    legendEl.appendChild(item);
+  });
+}
+
+function buildComplexity(algo) {
+  const info = ALGO_INFO[algo].complexity;
+  complexityBox.innerHTML = `
+    <div class="complexity-row"><span>Best case</span><code>${info.best}</code></div>
+    <div class="complexity-row"><span>Average case</span><code>${info.avg}</code></div>
+    <div class="complexity-row"><span>Worst case</span><code>${info.worst}</code></div>
+    <div class="complexity-row"><span>Space</span><code>${info.space}</code></div>
+  `;
+}
+
+function buildPseudocode(algo) {
+  const lines = ALGO_INFO[algo].pseudocode;
+  pseudocodeEl.innerHTML = lines.map((l, idx) =>
+    `<span class="code-line" data-line="${idx+1}">${l.length ? l : ' '}</span>`
+  ).join('\n');
+}
+
+function highlightLine(lineNum) {
+  document.querySelectorAll('.code-line').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.line) === lineNum);
+  });
+}
+
+function renderStep(step) {
+  const { arr, pivot, lo, hi, compare, swap1, swap2, sorted, merging1, merging2 } = step;
+  const max = Math.max(...arr);
+  const showLabels = arr.length <= 25;
+  chart.innerHTML = '';
+  arr.forEach((val, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'bar-wrap';
+
+    if (showLabels) {
+      const lbl = document.createElement('div');
+      lbl.className = 'bar-label';
+      lbl.textContent = val;
+      wrap.appendChild(lbl);
+    }
+
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.height = `${(val / max) * 100}%`;
+
+    if (sorted.has(i))                     bar.classList.add('sorted');
+    else if (i === swap1 || i === swap2)   bar.classList.add('swap');
+    else if (i === merging1 || i === merging2) bar.classList.add('merging');
+    else if (i === compare)                bar.classList.add('compare');
+    else if (i === pivot)                  bar.classList.add('pivot');
+    else if (lo !== -1 && hi !== -1 && i >= lo && i <= hi) bar.classList.add('subarray');
+    else                                   bar.classList.add('default');
+
+    wrap.appendChild(bar);
+    chart.appendChild(wrap);
+  });
+
+  statusEl.textContent = step.msg;
+  stepCountEl.textContent = `Step ${currentStep} / ${steps.length - 1}`;
+  statCompares.textContent = step.compares;
+  statSwaps.textContent = step.swaps;
+  statArrayAccess.textContent = step.accesses;
+  statDepth.textContent = step.depth;
+  highlightLine(step.line);
+  playStepSound(step);
+}
+
+// ============== CONTROL FLOW ==============
+function init(arr) {
+  array = arr;
+  steps = GENERATORS[currentAlgo](arr);
+  currentStep = 0;
+  const initialSnap = { arr: [...arr], pivot: -1, lo: -1, hi: -1, compare: -1, swap1: -1, swap2: -1, merging1: -1, merging2: -1, sorted: new Set(), msg: 'Press Play or Step to start sorting.', line: -1, compares: 0, swaps: 0, accesses: 0, depth: 0 };
+  steps.unshift(initialSnap);
+  renderStep(steps[0]);
+  btnPlay.textContent = '▶ Play';
+  btnPlay.disabled = false;
+  btnStep.disabled = false;
+  btnBack.disabled = true;
+  stopTimer();
+  timerEl.textContent = '';
+
+  // Show pivot badge for QuickSort
+  if (currentAlgo === 'quick') {
+    pivotBadge.textContent = `Strategy: ${getPivotLabel(pivotSelect.value)}`;
+    pivotBadge.classList.add('show');
+  } else {
+    pivotBadge.classList.remove('show');
+  }
+}
+
+function stepForward() {
+  if (currentStep < steps.length - 1) {
+    if (currentStep === 0) startTimer();
+    currentStep++;
+    renderStep(steps[currentStep]);
+  }
+  btnBack.disabled = currentStep === 0;
+  if (currentStep === steps.length - 1) {
+    stopPlay();
+    stopTimer();
+    btnPlay.disabled = true;
+    btnStep.disabled = true;
+  }
+}
+
+function stepBackward() {
+  stopPlay();
+  if (currentStep > 0) {
+    currentStep--;
+    renderStep(steps[currentStep]);
+    btnPlay.disabled = false;
+    btnStep.disabled = false;
+  }
+  btnBack.disabled = currentStep === 0;
+}
+
+function startPlay() {
+  if (currentStep >= steps.length - 1) return;
+  playing = true;
+  btnPlay.textContent = '⏸ Pause';
+  function tick() {
+    if (!playing) return;
+    stepForward();
+    if (currentStep < steps.length - 1) {
+      playTimer = setTimeout(tick, getDelay());
+    }
+  }
+  tick();
+}
+
+function stopPlay() {
+  playing = false;
+  clearTimeout(playTimer);
+  btnPlay.textContent = '▶ Play';
+}
+
+function startTimer() {
+  startTime = performance.now();
+  stopTimer();
+  elapsedInterval = setInterval(() => {
+    const secs = ((performance.now() - startTime) / 1000).toFixed(1);
+    timerEl.textContent = `Visualization time: ${secs}s`;
+  }, 100);
+}
+
+function stopTimer() {
+  if (elapsedInterval) clearInterval(elapsedInterval);
+}
+
+function getDelay() {
+  return 1050 - parseInt(speedSlider.value);
+}
+
+// ============== KEYBOARD SHORTCUTS ==============
+document.addEventListener('keydown', (e) => {
+  // Don't fire when typing in the custom input
+  if (e.target === customInput) return;
+  switch (e.key) {
+    case ' ':
+      e.preventDefault();
+      if (playing) stopPlay(); else startPlay();
+      break;
+    case 'ArrowRight':
+      e.preventDefault();
+      stopPlay();
+      stepForward();
+      break;
+    case 'ArrowLeft':
+      e.preventDefault();
+      stepBackward();
+      break;
+    case 'r': case 'R':
+      stopPlay();
+      init(array);
+      break;
+    case 'n': case 'N':
+      stopPlay();
+      init(generateArray(parseInt(sizeSlider.value), presetSelect.value));
+      break;
+  }
+});
+
+// ============== CUSTOM ARRAY INPUT ==============
+btnCustom.addEventListener('click', () => {
+  const raw = customInput.value.trim();
+  if (!raw) return;
+  const parsed = raw.split(/[\s,]+/).map(Number).filter(n => !isNaN(n) && n > 0);
+  if (parsed.length < 2) {
+    statusEl.textContent = 'Enter at least 2 valid numbers separated by commas or spaces.';
+    return;
+  }
+  const clamped = parsed.map(n => Math.min(Math.max(Math.round(n), 1), 999));
+  stopPlay();
+  sizeSlider.value = clamped.length;
+  sizeLabel.textContent = clamped.length;
+  init(clamped);
+});
+
+customInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') btnCustom.click();
+});
+
+// ============== EVENT WIRING ==============
+btnPlay.addEventListener('click', () => { if (playing) stopPlay(); else startPlay(); });
+btnStep.addEventListener('click', () => { stopPlay(); stepForward(); });
+btnBack.addEventListener('click', stepBackward);
+btnReset.addEventListener('click', () => { stopPlay(); init(array); });
+btnNew.addEventListener('click', () => {
+  stopPlay();
+  init(generateArray(parseInt(sizeSlider.value), presetSelect.value));
+});
+
+presetSelect.addEventListener('change', () => {
+  stopPlay();
+  init(generateArray(parseInt(sizeSlider.value), presetSelect.value));
+});
+
+pivotSelect.addEventListener('change', () => {
+  stopPlay();
+  init(array);
+});
+
+speedSlider.addEventListener('input', () => {
+  const v = parseInt(speedSlider.value);
+  speedLabel.textContent = v < 300 ? 'Slow' : v < 650 ? 'Medium' : v < 850 ? 'Fast' : 'Turbo';
+});
+
+sizeSlider.addEventListener('input', () => { sizeLabel.textContent = sizeSlider.value; });
+sizeSlider.addEventListener('change', () => {
+  stopPlay();
+  init(generateArray(parseInt(sizeSlider.value), presetSelect.value));
+});
+
+document.getElementById('algoTabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('.algo-tab');
+  if (!tab) return;
+  document.querySelectorAll('.algo-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  currentAlgo = tab.dataset.algo;
+  stopPlay();
+  // Show/hide pivot row
+  pivotRow.classList.toggle('visible', currentAlgo === 'quick');
+  buildLegend(currentAlgo);
+  buildComplexity(currentAlgo);
+  buildPseudocode(currentAlgo);
+  init(array.length ? array : generateArray(parseInt(sizeSlider.value), presetSelect.value));
+});
+
+// ============== BOOTSTRAP ==============
+buildLegend(currentAlgo);
+buildComplexity(currentAlgo);
+buildPseudocode(currentAlgo);
+init(generateArray(30, 'random'));
+</script>
+</body>
+</html>
